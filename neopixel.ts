@@ -24,6 +24,19 @@ enum NeoPixelColors {
     Black = 0x000000
 }
 
+enum SensorBoardSlot4Pin {
+    //% block="P13-P14"
+    P13_P14,
+    //% block="P12-P1"
+    P12_P1,
+    //% block="P8-P2"
+    P8_P2,
+    //% block="P15-P16"
+    P15_P16,
+    //% block="P19-P20"
+    P19_P20,
+}
+
 /**
  * Different modes for RGB or RGB+W NeoPixel strips
  */
@@ -44,7 +57,7 @@ namespace neopixel {
     /**
      * A NeoPixel strip
      */
-    export class Strip {
+    class Strip {
         buf: Buffer;
         pin: DigitalPin;
         // TODO: encode as bytes instead of 32bit
@@ -325,6 +338,7 @@ namespace neopixel {
         //% strip.defl=strip
         //% parts="neopixel"
         //% blockSetVariable=range
+        //% blockHidden=true
         range(start: number, length: number): Strip {
             start = start >> 0;
             length = length >> 0;
@@ -348,6 +362,7 @@ namespace neopixel {
         //% strip.defl=strip
         //% weight=40
         //% parts="neopixel"
+        //% blockHidden=true
         shift(offset: number = 1): void {
             offset = offset >> 0;
             const stride = this._mode === NeoPixelMode.RGBW ? 4 : 3;
@@ -363,6 +378,7 @@ namespace neopixel {
         //% strip.defl=strip
         //% weight=39
         //% parts="neopixel"
+        //% blockHidden=true
         rotate(offset: number = 1): void {
             offset = offset >> 0;
             const stride = this._mode === NeoPixelMode.RGBW ? 4 : 3;
@@ -482,6 +498,65 @@ namespace neopixel {
         }
     }
 
+    function slot4PinToPins(slot: SensorBoardSlot4Pin): DigitalPin[] {
+        let pins: DigitalPin[] = [DigitalPin.P12, DigitalPin.P1]
+        switch(slot) {
+            case SensorBoardSlot4Pin.P12_P1:
+                return pins;
+            case SensorBoardSlot4Pin.P13_P14:
+                pins[0] = DigitalPin.P13;
+                pins[1] = DigitalPin.P14;
+            case SensorBoardSlot4Pin.P15_P16:
+                pins[0] = DigitalPin.P15;
+                pins[1] = DigitalPin.P16;
+            case SensorBoardSlot4Pin.P19_P20:
+                pins[0] = DigitalPin.P19;
+                pins[1] = DigitalPin.P20;
+            case SensorBoardSlot4Pin.P8_P2:
+                pins[0] = DigitalPin.P8;
+                pins[1] = DigitalPin.P2;
+        }
+        return pins
+    }
+
+    let defaultSingleStrip: Strip
+    //% blockId="initSingleStrip" block="全彩LED连接在%slot|| 模式%mode"
+    //% weight=90 blockGap=8
+    //% parts="neopixel"
+    export function initSingleStrip(slot: SensorBoardSlot4Pin, mode: NeoPixelMode = NeoPixelMode.RGB_RGB) {
+        let strip = new Strip();
+        let stride = mode === NeoPixelMode.RGBW ? 4 : 3;
+        let slotPins = slot4PinToPins(slot)
+        strip.buf = pins.createBuffer(1 * stride);
+        strip.start = 0;
+        strip._length = 1;
+        strip._mode = mode || NeoPixelMode.RGB;
+        strip._matrixWidth = 0;
+        strip.setBrightness(128);
+        strip.setPin(pin[0]);
+        defaultSingleStrip = strip;
+    }
+
+    //% blockId="single_strip_showRainbow" block="全彩LED 显示彩虹||色相从%startHue到%endHue"
+    export function showRainbow(startHue: number = 1, endHue: number = 360) {
+        defaultSingleStrip.showRainbow(startHue, endHue)
+    }
+
+    //% blockId="single_strip_showColor" block="全彩LED 显示颜色%rgb=neopixel_colors"
+    export function showColor(rgb: number) {
+        defaultSingleStrip.showColor(rgb)
+    }
+
+    //% blockId="single_strip_clear" block="全彩LED 清除显示"
+    export function clear() {
+        defaultSingleStrip.clear()
+    }
+
+    //% blockId="single_strip_show" block="全彩LED 刷新显示"
+    export function show() {
+        defaultSingleStrip.show()
+    }
+
     /**
      * Create a new NeoPixel driver for `numleds` LEDs.
      * @param pin the pin where the neopixel is connected.
@@ -492,6 +567,7 @@ namespace neopixel {
     //% parts="neopixel"
     //% trackArgs=0,2
     //% blockSetVariable=strip
+    //% blockHidden=true
     export function create(pin: DigitalPin, numleds: number, mode: NeoPixelMode): Strip {
         let strip = new Strip();
         let stride = mode === NeoPixelMode.RGBW ? 4 : 3;
